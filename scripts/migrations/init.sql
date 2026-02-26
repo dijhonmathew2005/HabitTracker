@@ -1,0 +1,27 @@
+-- Initial schema for HabitTracker
+
+CREATE TABLE IF NOT EXISTS users (
+  user_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255),
+  email VARCHAR(255) UNIQUE,
+  password_hash VARCHAR(255)
+);
+
+CREATE TABLE IF NOT EXISTS habits (
+  habit_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  habit_name VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  habit_id INT NOT NULL,
+  date DATE,
+  status VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (habit_id) REFERENCES habits(habit_id) ON DELETE CASCADE
+);
