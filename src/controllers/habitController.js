@@ -4,68 +4,130 @@ const verifyToken = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+/*
+====================================
+CREATE HABIT
+POST /api/habits
+====================================
+*/
 router.post("/", verifyToken, (req, res) => {
-  const user_id = req.user && (req.user.user_id || req.user.id);
+  const user_id = req.user.user_id;
   const { habit_name } = req.body;
 
-  if (!user_id) return res.status(401).json({ message: "Unauthorized" });
-  if (!habit_name) return res.status(400).json({ message: "habit_name required" });
+  if (!habit_name) {
+    return res.status(400).json({ message: "habit_name required" });
+  }
 
   db.query(
     "INSERT INTO habits (user_id, habit_name) VALUES (?, ?)",
     [user_id, habit_name],
     (err, result) => {
       if (err) return res.status(500).json(err);
-      res.status(201).json({ habit_id: result.insertId, message: "Habit added" });
+
+      res.status(201).json({
+        habit_id: result.insertId,
+        message: "Habit created successfully"
+      });
     }
   );
 });
 
+/*
+====================================
+GET ALL HABITS (for logged-in user)
+GET /api/habits
+====================================
+*/
 router.get("/", verifyToken, (req, res) => {
-  const user_id = req.user && (req.user.user_id || req.user.id);
-  if (!user_id) return res.status(401).json({ message: "Unauthorized" });
+  const user_id = req.user.user_id;
 
   db.query(
     "SELECT * FROM habits WHERE user_id = ?",
     [user_id],
     (err, results) => {
       if (err) return res.status(500).json(err);
-      res.json(results);
+
+      res.status(200).json(results);
     }
   );
 });
 
+/*
+====================================
+GET SINGLE HABIT BY ID
+GET /api/habits/:id
+====================================
+*/
+router.get("/:id", verifyToken, (req, res) => {
+  const user_id = req.user.user_id;
+  const habitId = req.params.id;
+
+  db.query(
+    "SELECT * FROM habits WHERE habit_id = ? AND user_id = ?",
+    [habitId, user_id],
+    (err, results) => {
+      if (err) return res.status(500).json(err);
+
+      if (results.length === 0) {
+        return res.status(404).json({ message: "Habit not found" });
+      }
+
+      res.status(200).json(results[0]);
+    }
+  );
+});
+
+/*
+====================================
+UPDATE HABIT
+PUT /api/habits/:id
+====================================
+*/
 router.put("/:id", verifyToken, (req, res) => {
-  const user_id = req.user && (req.user.user_id || req.user.id);
+  const user_id = req.user.user_id;
   const habitId = req.params.id;
   const { habit_name } = req.body;
 
-  if (!user_id) return res.status(401).json({ message: "Unauthorized" });
+  if (!habit_name) {
+    return res.status(400).json({ message: "habit_name required" });
+  }
 
   db.query(
-    "UPDATE habits SET habit_name = ? WHERE id = ? AND user_id = ?",
+    "UPDATE habits SET habit_name = ? WHERE habit_id = ? AND user_id = ?",
     [habit_name, habitId, user_id],
     (err, result) => {
       if (err) return res.status(500).json(err);
-      if (result.affectedRows === 0) return res.status(404).json({ message: "Not found" });
-      res.json({ message: "Habit updated" });
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: "Habit not found" });
+      }
+
+      res.status(200).json({ message: "Habit updated successfully" });
     }
   );
 });
 
+/*
+====================================
+DELETE HABIT
+DELETE /api/habits/:id
+====================================
+*/
 router.delete("/:id", verifyToken, (req, res) => {
-  const user_id = req.user && (req.user.user_id || req.user.id);
+  const user_id = req.user.user_id;
   const habitId = req.params.id;
 
-  if (!user_id) return res.status(401).json({ message: "Unauthorized" });
-
   db.query(
-    "DELETE FROM habits WHERE id = ? AND user_id = ?",
+    "DELETE FROM habits WHERE habit_id = ? AND user_id = ?",
     [habitId, user_id],
     (err, result) => {
       if (err) return res.status(500).json(err);
-      if (result.affectedRows === 0) return res.status(404).json({ message: "Not found" });
-      res.json({ message: "Habit deleted" });
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: "Habit not found" });
+      }
+
+      res.status(200).json({ message: "Habit deleted successfully" });
     }
   );
 });
